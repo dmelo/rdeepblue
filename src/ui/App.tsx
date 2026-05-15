@@ -525,6 +525,22 @@ export function App() {
           <p className="timestamp">Saved {new Date(state.updatedAt).toLocaleString()}</p>
         </section>
       </div>
+
+      <footer className="footer">
+        <div className="footer-rack" aria-hidden="true">
+          <span>D</span>
+          <span>I</span>
+          <span>O</span>
+          <span>G</span>
+          <span>O</span>
+        </div>
+        <p>
+          Made with suspiciously legal tile rearrangements by{" "}
+          <a href="https://github.com/dmelo" rel="noreferrer" target="_blank">
+            Diogo Oliveira de Melo
+          </a>
+        </p>
+      </footer>
     </main>
   );
 }

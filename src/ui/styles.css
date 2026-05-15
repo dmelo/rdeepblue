@@ -489,6 +489,68 @@ label input[type="number"] {
   gap: 12px;
 }
 
+.footer {
+  align-items: center;
+  color: #e9fff7;
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  padding: 8px 16px 24px;
+  text-align: center;
+}
+
+.footer a {
+  color: #f8c33a;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}
+
+.footer-rack {
+  align-items: end;
+  background: #14211e;
+  border-radius: 8px;
+  box-shadow: inset 0 -5px 0 rgba(248, 195, 58, 0.9), 0 10px 24px rgba(6, 33, 27, 0.24);
+  display: flex;
+  gap: 4px;
+  padding: 8px 10px 10px;
+}
+
+.footer-rack span {
+  align-items: center;
+  background: #fffdf8;
+  border: 1px solid #d5dfda;
+  border-bottom: 4px solid #b5c5bd;
+  border-radius: 6px;
+  color: #1267d6;
+  display: grid;
+  font-size: 13px;
+  font-weight: 950;
+  height: 30px;
+  justify-items: center;
+  width: 24px;
+}
+
+.footer-rack span:nth-child(1),
+.footer-rack span:nth-child(4) {
+  color: #c82922;
+  transform: rotate(-4deg);
+}
+
+.footer-rack span:nth-child(2),
+.footer-rack span:nth-child(5) {
+  color: #0f9f6e;
+  transform: rotate(3deg);
+}
+
+.footer-rack span:nth-child(3) {
+  color: #14211e;
+  transform: translateY(-3px) rotate(6deg);
+}
+
 @media (max-width: 900px) {
   .topbar,
   .workspace {

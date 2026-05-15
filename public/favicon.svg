@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#0f4c3a" />
+  <rect x="8" y="38" width="48" height="7" rx="3.5" fill="#f8c33a" />
+  <g transform="translate(10 13) rotate(-7 9 18)">
+    <rect width="18" height="33" rx="4" fill="#fffdf8" stroke="#d7ded9" />
+    <text x="9" y="20" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="900" fill="#c82922">13</text>
+  </g>
+  <g transform="translate(24 11) rotate(4 9 18)">
+    <rect width="18" height="33" rx="4" fill="#fffdf8" stroke="#d7ded9" />
+    <text x="9" y="21" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="900" fill="#1267d6">7</text>
+  </g>
+  <g transform="translate(39 14) rotate(7 8 17)">
+    <rect width="17" height="31" rx="4" fill="#14211e" stroke="#31433f" />
+    <text x="8.5" y="21" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" font-weight="900" fill="#fffdf8">J</text>
+  </g>
+  <circle cx="50" cy="13" r="8" fill="#f8c33a" />
+  <text x="50" y="16.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" font-weight="900" fill="#13201d">DB</text>
+</svg>
