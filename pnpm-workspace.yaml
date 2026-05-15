@@ -1,0 +1,8 @@
+packages:
+  - .
+
+blockExoticSubdeps: true
+minimumReleaseAge: 10080
+
+onlyBuiltDependencies:
+  - esbuild

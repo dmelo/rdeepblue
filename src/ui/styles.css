@@ -1,0 +1,327 @@
+:root {
+  color: #18202a;
+  background: #f6f7f9;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  border: 1px solid #c6ccd4;
+  border-radius: 7px;
+  background: #fff;
+  color: #18202a;
+  cursor: pointer;
+  min-height: 36px;
+  padding: 0 12px;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+main {
+  min-height: 100vh;
+}
+
+.topbar {
+  align-items: center;
+  background: #ffffff;
+  border-bottom: 1px solid #dce0e5;
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+  padding: 18px 24px;
+}
+
+h1 {
+  font-size: 24px;
+  line-height: 1.1;
+  margin: 0 0 5px;
+}
+
+p {
+  margin: 0;
+}
+
+.topbar p {
+  color: #5b6572;
+}
+
+.topbar-actions,
+.button-row,
+.panel-header,
+.meld-header {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.topbar-actions {
+  justify-content: flex-end;
+}
+
+label {
+  color: #5b6572;
+  display: grid;
+  font-size: 13px;
+  gap: 4px;
+}
+
+label input[type="number"] {
+  border: 1px solid #c6ccd4;
+  border-radius: 7px;
+  height: 36px;
+  padding: 0 10px;
+  width: 82px;
+}
+
+.checkbox {
+  align-items: center;
+  color: #18202a;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+}
+
+.workspace {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 280px minmax(0, 1fr);
+  padding: 16px;
+}
+
+.panel {
+  background: #ffffff;
+  border: 1px solid #dce0e5;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.tile-picker {
+  grid-row: span 3;
+}
+
+.panel-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+.segmented {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(2, 1fr);
+  margin-bottom: 10px;
+}
+
+.segmented.compact {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.segmented .active,
+.primary {
+  background: #155eef;
+  border-color: #155eef;
+  color: #fff;
+}
+
+.secondary {
+  background: #f6f7f9;
+}
+
+.tile-grid {
+  display: grid;
+  gap: 7px;
+  grid-template-columns: repeat(4, 1fr);
+  margin-top: 10px;
+}
+
+.tile-grid.jokers {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.tile-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 52px;
+}
+
+.tile {
+  align-items: center;
+  border-radius: 7px;
+  display: grid;
+  height: 48px;
+  justify-items: center;
+  line-height: 1;
+  min-height: 48px;
+  padding: 3px 5px;
+  width: 48px;
+}
+
+.tile[draggable="true"] {
+  cursor: grab;
+}
+
+.tile[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.tile span {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.tile small {
+  font-size: 10px;
+  font-weight: 700;
+  opacity: 0.7;
+}
+
+.tile.red {
+  color: #b42318;
+}
+
+.tile.blue {
+  color: #175cd3;
+}
+
+.tile.black {
+  color: #101828;
+}
+
+.tile.orange {
+  color: #c4320a;
+}
+
+.tile.joker {
+  background: #101828;
+  color: #fff;
+  width: 66px;
+}
+
+.tile.selected {
+  box-shadow: 0 0 0 3px #8bb7ff;
+}
+
+.tile.dragging {
+  opacity: 0.5;
+}
+
+.drop-zone {
+  border: 1px dashed transparent;
+  border-radius: 8px;
+  margin: -4px;
+  padding: 4px;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.drop-zone.drop-active {
+  background: #eff6ff;
+  border-color: #155eef;
+}
+
+.panel.drop-zone {
+  margin: 0;
+  padding: 14px;
+}
+
+.hand,
+.board,
+.solver {
+  min-width: 0;
+}
+
+.button-row {
+  margin-top: 12px;
+}
+
+.meld-list,
+.target-board {
+  display: grid;
+  gap: 10px;
+}
+
+.meld,
+.target-meld {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.meld-header {
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.empty,
+.timestamp {
+  color: #697586;
+  font-size: 13px;
+}
+
+.errors {
+  background: #fff1f0;
+  border: 1px solid #ffccc7;
+  border-radius: 8px;
+  color: #a8071a;
+  margin-top: 12px;
+  padding: 10px;
+}
+
+.solver {
+  display: grid;
+  gap: 12px;
+}
+
+.result {
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.result.draw {
+  background: #fff7e6;
+  border: 1px solid #ffd591;
+}
+
+.result.play {
+  background: #f0f7ff;
+  border: 1px solid #bad8ff;
+  display: grid;
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .topbar,
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar {
+    align-items: flex-start;
+    display: grid;
+  }
+
+  .tile-picker {
+    grid-row: auto;
+  }
+}
