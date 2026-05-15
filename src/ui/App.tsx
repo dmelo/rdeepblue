@@ -20,6 +20,17 @@ function touch(state: GameState): GameState {
 
 const TILE_DRAG_TYPE = "application/x-rummikub-tile";
 
+function Logo() {
+  return (
+    <div className="logo-mark" aria-hidden="true">
+      <span className="logo-tile logo-red">13</span>
+      <span className="logo-tile logo-blue">7</span>
+      <span className="logo-tile logo-black">J</span>
+      <span className="logo-spark">DB</span>
+    </div>
+  );
+}
+
 function TileButton({
   tile,
   selected,
@@ -339,11 +350,15 @@ export function App() {
   }
 
   return (
-    <main>
+    <main className="app-shell">
       <header className="topbar">
-        <div>
-          <h1>Rummikub Deep Blue</h1>
-          <p>Track the physical board, maintain DeepBlue&apos;s hand, then ask the solver for the next turn.</p>
+        <div className="brand">
+          <Logo />
+          <div className="brand-copy">
+            <div className="eyebrow">Weekend table mode</div>
+            <h1>Rummikub Deep Blue</h1>
+            <p>Track the board, keep DeepBlue&apos;s rack honest, then see what the machine would play.</p>
+          </div>
         </div>
         <div className="topbar-actions">
           <label>
@@ -382,8 +397,11 @@ export function App() {
           onDrop={dropTileOnPicker}
         />
 
-        <section className="panel hand">
-          <div className="panel-title">DeepBlue Hand</div>
+        <section className="panel hand hand-panel">
+          <div className="panel-header">
+            <div className="panel-title">DeepBlue Hand</div>
+            <span className="pill">{state.hand.length} tiles</span>
+          </div>
           <div
             className={`tile-row drop-zone ${dragTarget === "hand" ? "drop-active" : ""}`}
             onDragLeave={() => leaveTileDrop("hand")}
@@ -414,7 +432,7 @@ export function App() {
           </div>
         </section>
 
-        <section className="panel board">
+        <section className="panel board board-panel">
           <div className="panel-header">
             <div className="panel-title">Board</div>
             <button type="button" onClick={addMeld}>
@@ -467,8 +485,11 @@ export function App() {
           )}
         </section>
 
-        <section className="panel solver">
-          <div className="panel-title">Solver</div>
+        <section className="panel solver solver-panel">
+          <div className="panel-header">
+            <div className="panel-title">DeepBlue Brain</div>
+            <span className="pill">for fun</span>
+          </div>
           <button className="primary" type="button" onClick={runSolver}>
             Solve DeepBlue turn
           </button>
