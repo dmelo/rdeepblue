@@ -51,6 +51,15 @@ button:disabled {
   min-height: 100vh;
 }
 
+.error-screen {
+  color: #fffdf8;
+  display: grid;
+  font-size: 24px;
+  font-weight: 900;
+  place-items: center;
+  text-align: center;
+}
+
 .topbar {
   align-items: center;
   background: #fffdf8;
@@ -470,6 +479,22 @@ label input[type="number"] {
 .solver {
   display: grid;
   gap: 12px;
+}
+
+.solver-note {
+  color: #52645e;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.solver-note a {
+  color: #1267d6;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.solver-note a:hover {
+  text-decoration: underline;
 }
 
 .result {

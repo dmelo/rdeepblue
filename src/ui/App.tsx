@@ -5,6 +5,8 @@ import { createFullTileSet, sortTiles, tileLabel } from "../domain/tiles";
 import type { GameState, Meld, SolverResult, Tile, TileColor } from "../domain/types";
 import { COLORS } from "../domain/types";
 import { clearState, loadState, saveState } from "../domain/storage";
+import { trackEvent } from "../observability/analytics";
+import { captureException } from "../observability/sentry";
 
 const emptyState = (): GameState => ({
   board: [{ id: crypto.randomUUID(), tiles: [] }],
@@ -326,8 +328,26 @@ export function App() {
   }
 
   function runSolver() {
-    const result = solveTurn(state);
-    setSolverResult(result);
+    trackEvent("solve_deepblue_turn", {
+      board_groups: state.board.length,
+      hand_tiles: state.hand.length,
+      initial_meld_complete: state.isInitialMeldComplete
+    });
+
+    try {
+      const result = solveTurn(state);
+      setSolverResult(result);
+      trackEvent("solve_deepblue_result", {
+        result: result.kind,
+        hand_tiles: state.hand.length
+      });
+    } catch (error) {
+      captureException(error);
+      setSolverResult({
+        kind: "draw",
+        reason: "DeepBlue hit an unexpected solver error. The details were sent to Sentry if it is configured."
+      });
+    }
   }
 
   function applySolverMove() {
@@ -493,6 +513,13 @@ export function App() {
           <button className="primary" type="button" onClick={runSolver}>
             Solve DeepBlue turn
           </button>
+          <p className="solver-note">
+            Solver inspired by Rijn, Takes, and Vis,{" "}
+            <a href="https://arxiv.org/abs/1604.07553" rel="noreferrer" target="_blank">
+              The Complexity of Rummikub Problems
+            </a>
+            .
+          </p>
           {solverResult?.kind === "draw" && <div className="result draw">Draw: {solverResult.reason}</div>}
           {solverResult?.kind === "play" && (
             <div className="result play">
