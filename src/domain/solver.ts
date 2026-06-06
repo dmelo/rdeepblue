@@ -75,11 +75,12 @@ export function solveTurn(state: GameState): SolverResult {
   const result = dpSolve(allTiles, requiredIds, TILE_WEIGHT);
 
   if (!result) {
+    // Only reachable if the board tiles cannot all be re-formed into valid melds,
+    // which a validated board never hits; kept as a defensive fallback.
     return {
       kind: "draw",
       reason: "No legal arrangement preserves every table tile."
     };
-  }
   }
 
   const playedTiles = result.melds

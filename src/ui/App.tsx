@@ -198,8 +198,10 @@ export function App() {
     const MAX_SPEED = 22;
     let pointerY = Number.NaN;
     let frame = 0;
-    const onDragOver = (event: Event) => {
-      pointerY = (event as MouseEvent).clientY;
+    // globalThis.DragEvent is the DOM event (it has clientY); the bare DragEvent
+    // name is shadowed by React's synthetic-event import in this file.
+    const onDragOver = (event: globalThis.DragEvent) => {
+      pointerY = event.clientY;
     };
     const step = () => {
       if (!Number.isNaN(pointerY)) {
