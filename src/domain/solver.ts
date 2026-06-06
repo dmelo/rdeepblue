@@ -5,6 +5,12 @@ import { dpCanUseAllTiles, dpSolve, type DpMeld } from "./solverDp";
 
 const INITIAL_MELD_THRESHOLD = 30;
 
+// Larger than any reachable meldValue (<= 754 for the full set), so the ongoing
+// objective is lexicographic: maximize hand tiles played first, meldValue second.
+// This makes DeepBlue prefer emptying its hand (going out) over a higher-scoring
+// arrangement that plays fewer tiles.
+const TILE_WEIGHT = 10000;
+
 function makeMeldId(index: number) {
   return `solution-${index + 1}`;
 }
@@ -37,9 +43,10 @@ export function solveTurn(state: GameState): SolverResult {
 
   if (!state.isInitialMeldComplete) {
     // The initial meld must reach 30 points using DeepBlue's hand alone; table
-    // tiles stay put and the new melds are appended to the board.
-    const result = dpSolve(state.hand, new Set(), INITIAL_MELD_THRESHOLD);
-    if (!result) {
+    // tiles stay put and the new melds are appended to the board. Here we
+    // maximize value (tileWeight 0) and require it to clear the threshold.
+    const result = dpSolve(state.hand, new Set(), 0);
+    if (!result || result.meldValue < INITIAL_MELD_THRESHOLD) {
       return {
         kind: "draw",
         reason: "No legal initial meld reaches 30 points without using table tiles."
@@ -60,11 +67,12 @@ export function solveTurn(state: GameState): SolverResult {
   }
 
   // Ongoing turn: every table tile must stay played, so we re-pool the board and
-  // the hand and find the highest-value arrangement that uses all board tiles.
+  // the hand and find the arrangement that plays the most hand tiles (maximizing
+  // value as a tiebreak) while using all board tiles.
   const boardTiles = board.flatMap((meld) => meld.tiles);
   const requiredIds = new Set(boardTiles.map((tile) => tile.id));
   const allTiles = [...boardTiles, ...state.hand];
-  const result = dpSolve(allTiles, requiredIds, 0);
+  const result = dpSolve(allTiles, requiredIds, TILE_WEIGHT);
 
   if (!result) {
     return {

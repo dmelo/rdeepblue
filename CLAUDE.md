@@ -48,14 +48,16 @@ The codebase is split into a **pure domain layer** and a **thin UI layer**. The 
 
 `solveTurn` operates in two distinct modes:
 
-1. **Initial meld not yet complete** — find melds from the **hand only** totaling **≥ 30**. Table tiles must *not* be used; the new melds are appended to the board. Draw if unreachable.
-2. **Ongoing play** — pool hand + all board tiles, require **every existing board tile stays played** (passed to the DP as `requiredIds`), and maximize total value. If the best arrangement plays no hand tile, it's a draw.
+1. **Initial meld not yet complete** — find melds from the **hand only** totaling **≥ 30** (value-maximizing, `tileWeight = 0`). Table tiles must *not* be used; the new melds are appended to the board. Draw if unreachable.
+2. **Ongoing play** — pool hand + all board tiles, require **every existing board tile stays played** (passed to the DP as `requiredIds`), and **maximize the number of hand tiles played** so DeepBlue prefers going out, with meld value only as a tiebreak. If the best arrangement plays no hand tile, it's a draw.
 
-Before either mode, the current board is validated; an invalid board short-circuits to a draw listing the errors.
+The two modes differ only in the DP's `tileWeight` (see below). Before either mode, the current board is validated; an invalid board short-circuits to a draw listing the errors.
 
 The DP (`solverDp.ts`) processes tile values 1→13. Its state is, per suit, the two open runs — each bucketed to length `{0,1,2,3+}` plus flags for *holds a board tile* (the table constraint: abandoning such a run is infeasible) and *pending joker count* — together with a count of jokers already landed in completed melds. Groups are formed from the tiles left over at each value (precomputed `groupFrontier`). `DpSolver.dp` is the memoized scorer; `DpSolver.reconstruct` replays the optimal transitions to materialize concrete `Meld`s and the played tiles. Complexity is polynomial (effectively linear in the 13 values for fixed suits/copies), versus the old exponential search that hung on full late-game boards.
 
-Two important semantic notes: jokers score their **represented value** (so the DP's `score` == `meldValue`, and a joker in a run is reported at the value it fills, maximizing) — this differs from `rules.ts`/`validateMeld`, which assign jokers low; the solver output carries its own `jokerAssignments` and does not pass through `sortMeldTiles`. And a joker only counts as "used" when its run **completes** (pending-joker tracking), which is what makes the board-joker constraint correct. The DP is validated against the brute-force oracle by `solverDp.diff.test.ts` (random inputs, identical max value) and `solverDp.reconstruct.test.ts` (legal melds, right tiles, values summing to the DP score).
+The objective is a single composite scalar: `tileWeight * tilesUsed + meldValue`. With `tileWeight = 0` it's pure value; with `tileWeight = 10000` (larger than any reachable meldValue) it's lexicographic — tiles played first, value as tiebreak — which is what lets DeepBlue choose a *lower-scoring* line that empties its hand (e.g. freeing a joker to seat two low tiles instead of parking it as a high tile). `solver.win.test.ts` pins a real end-game where these two objectives diverge.
+
+Two important semantic notes: jokers score their **represented value** (so `meldValue` counts joker positions, and a joker in a run is reported at the value it fills, maximizing) — this differs from `rules.ts`/`validateMeld`, which assign jokers low; the solver output carries its own `jokerAssignments` and does not pass through `sortMeldTiles`. And a joker only counts as "used" when its run **completes** (pending-joker tracking), which is what makes the board-joker constraint correct. The DP is validated against the brute-force oracle by `solverDp.diff.test.ts` (random inputs, identical max objective for both `tileWeight` modes) and `solverDp.reconstruct.test.ts` (legal melds, right tiles, composite matching the scorer).
 
 ### UI (`src/ui/App.tsx`)
 

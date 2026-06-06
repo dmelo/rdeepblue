@@ -147,18 +147,19 @@ function pairCode(a: number, b: number): number {
 
 const planCache = new Map<number, SuitPlan[]>();
 
-// Cached per-suit plan enumeration. Plans depend only on (slotA, slotB, r, bc, v).
-export function suitPlans(slotA: number, slotB: number, r: number, bc: number, v: number): SuitPlan[] {
-  const key = (((slotA * NSTATE + slotB) * 3 + r) * 3 + bc) * 16 + v;
+// Cached per-suit plan enumeration. Plans depend only on (slotA, slotB, r, bc, v,
+// tileWeight).
+export function suitPlans(slotA: number, slotB: number, r: number, bc: number, v: number, tileWeight: number): SuitPlan[] {
+  const key = ((((slotA * NSTATE + slotB) * 3 + r) * 3 + bc) * 16 + v) * 100000 + tileWeight;
   let cached = planCache.get(key);
   if (!cached) {
-    cached = enumerateSuitPlans(slotA, slotB, r, bc, v);
+    cached = enumerateSuitPlans(slotA, slotB, r, bc, v, tileWeight);
     planCache.set(key, cached);
   }
   return cached;
 }
 
-export function enumerateSuitPlans(slotA: number, slotB: number, r: number, bc: number, v: number): SuitPlan[] {
+export function enumerateSuitPlans(slotA: number, slotB: number, r: number, bc: number, v: number, tileWeight: number): SuitPlan[] {
   const plans = new Map<string, SuitPlan>();
   const slots = [slotA, slotB];
 
@@ -190,7 +191,10 @@ export function enumerateSuitPlans(slotA: number, slotB: number, r: number, bc: 
         if (act === ER_BOARD) boardUsed += 1;
         const res = slotExtend(slot, v, isJoker, isBoard);
         nextStates.push(res.next);
-        score += res.score;
+        // Tiles credited mirror the meldValue credit: 3 when a run completes
+        // (L2 -> L3), 1 when extending an already-valid run (L3), else 0.
+        const tiles = slot === L3 ? 1 : slot >= L2_00 && slot <= L2_20 ? 3 : 0;
+        score += res.score + tileWeight * tiles;
         jc += res.jc;
       }
 
@@ -304,7 +308,10 @@ const NEG = Number.NEGATIVE_INFINITY;
 export class DpSolver {
   private memoNum = new Map<number, number>();
 
-  constructor(private readonly counts: Counts) {}
+  // tileWeight folds tile count into the objective: with tileWeight > max possible
+  // meldValue the DP maximizes tiles played first, meldValue second (used for the
+  // ongoing turn, so DeepBlue prefers going out). tileWeight 0 = pure meldValue.
+  constructor(private readonly counts: Counts, private readonly tileWeight: number) {}
 
   private baseCase(configs: number[], ju: number): number {
     for (const cfg of configs) {
@@ -326,7 +333,7 @@ export class DpSolver {
     const plansPerSuit: SuitPlan[][] = configs.map((cfg, c) => {
       const a = Math.floor(cfg / NSTATE);
       const b = cfg % NSTATE;
-      return suitPlans(a, b, this.counts.avail[c][v], this.counts.board[c][v], v);
+      return suitPlans(a, b, this.counts.avail[c][v], this.counts.board[c][v], v, this.tileWeight);
     });
 
     let best = NEG;
@@ -345,7 +352,7 @@ export class DpSolver {
           if (ju2 + sumPending > this.counts.totalJokers) continue;
           const sub = this.dp(v + 1, [nextConfig[0], nextConfig[1], nextConfig[2], nextConfig[3]], ju2);
           if (sub === NEG) continue;
-          const total = runScore + opt.total * v + sub;
+          const total = runScore + opt.total * (v + this.tileWeight) + sub;
           if (total > best) best = total;
         }
         return;
@@ -365,7 +372,7 @@ export class DpSolver {
   // Replays the optimal transitions to materialize the actual melds. Each open
   // run remembers its suit and start value so jokers are reported at the value
   // they represent and each meld's value sums exactly to the DP score.
-  reconstruct(tiles: Tile[], requiredIds: Set<string>): { meldValue: number; melds: DpMeld[] } | null {
+  reconstruct(tiles: Tile[], requiredIds: Set<string>): { composite: number; meldValue: number; tileCount: number; melds: DpMeld[] } | null {
     const total = this.dp(1, [0, 0, 0, 0], 0);
     if (total === NEG) return null;
     const { totalJokers } = this.counts;
@@ -445,7 +452,7 @@ export class DpSolver {
       const configs = [0, 1, 2, 3].map((c) => pairCode(stateOf(concrete[c][0]), stateOf(concrete[c][1])));
       const target = this.dp(v, configs, ju);
       const plansPerSuit = [0, 1, 2, 3].map((c) =>
-        suitPlans(stateOf(concrete[c][0]), stateOf(concrete[c][1]), this.counts.avail[c][v], this.counts.board[c][v], v)
+        suitPlans(stateOf(concrete[c][0]), stateOf(concrete[c][1]), this.counts.avail[c][v], this.counts.board[c][v], v, this.tileWeight)
       );
 
       let chosen: { plans: SuitPlan[]; g1: number; g2: number; ju2: number } | null = null;
@@ -474,7 +481,7 @@ export class DpSolver {
               if (ju2 + sumPending > totalJokers) continue;
               const sub = this.dp(v + 1, nextConfigs, ju2);
               if (sub === NEG) continue;
-              if (runScore + groupTiles * v + sub === target) {
+              if (runScore + groupTiles * (v + this.tileWeight) + sub === target) {
                 chosen = { plans: [pick[0], pick[1], pick[2], pick[3]], g1, g2, ju2 };
                 return true;
               }
@@ -556,7 +563,9 @@ export class DpSolver {
       }
     }
 
-    return { meldValue: total, melds };
+    const meldValue = melds.reduce((sum, m) => sum + m.meldValue, 0);
+    const tileCount = melds.reduce((sum, m) => sum + m.tiles.length, 0);
+    return { composite: total, meldValue, tileCount, melds };
   }
 }
 
@@ -567,24 +576,25 @@ export type DpMeld = {
   meldValue: number;
 };
 
-// Full solve: maximum-value arrangement (meldValue) using every tile in
-// requiredIds and reaching minMeldValue, with the concrete melds. Null if none.
-export function dpSolve(tiles: Tile[], requiredIds: Set<string>, minMeldValue: number): { meldValue: number; melds: DpMeld[] } | null {
+// Optimal arrangement using every tile in requiredIds, with the concrete melds.
+// tileWeight selects the objective (see DpSolver). Null only if infeasible.
+export function dpSolve(
+  tiles: Tile[],
+  requiredIds: Set<string>,
+  tileWeight: number
+): { composite: number; meldValue: number; tileCount: number; melds: DpMeld[] } | null {
   const counts = buildCounts(tiles, requiredIds);
-  const solver = new DpSolver(counts);
-  const result = solver.reconstruct(tiles, requiredIds);
-  if (!result) return null;
-  return result.meldValue >= minMeldValue ? result : null;
+  const solver = new DpSolver(counts, tileWeight);
+  return solver.reconstruct(tiles, requiredIds);
 }
 
-// Maximum total meldValue achievable from `tiles` while using every tile in
-// `requiredIds` and reaching at least `minMeldValue`. Null if impossible.
-export function dpMaxValue(tiles: Tile[], requiredIds: Set<string>, minMeldValue: number): number | null {
+// Maximum objective value (tileWeight * tilesUsed + meldValue) achievable from
+// `tiles` while using every tile in `requiredIds`. Null if impossible.
+export function dpMaxValue(tiles: Tile[], requiredIds: Set<string>, tileWeight: number): number | null {
   const counts = buildCounts(tiles, requiredIds);
-  const solver = new DpSolver(counts);
+  const solver = new DpSolver(counts, tileWeight);
   const best = solver.dp(1, [0, 0, 0, 0], 0);
-  if (best === NEG) return null;
-  return best >= minMeldValue ? best : null;
+  return best === NEG ? null : best;
 }
 
 export function dpCanUseAllTiles(tiles: Tile[]): boolean {

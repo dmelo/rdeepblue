@@ -86,43 +86,49 @@ describe("DP reconstruction", () => {
     for (const profile of profiles) {
       for (let i = 0; i < profile.cases && problems.length < 5; i += 1) {
         const { tiles, required } = randomSample(rand, profile.maxTiles, profile.density);
-        const expected = dpMaxValue(tiles, required, 0);
-        const solved = dpSolve(tiles, required, 0);
+        for (const tileWeight of [0, 10000]) {
+          const expected = dpMaxValue(tiles, required, tileWeight);
+          const solved = dpSolve(tiles, required, tileWeight);
 
-        if (expected === null) {
-          if (solved !== null) problems.push(`expected infeasible but got a solution`);
-          continue;
-        }
-        if (solved === null) {
-          problems.push(`expected ${expected} but reconstruction returned null`);
-          continue;
-        }
-
-        const sum = solved.melds.reduce((s, m) => s + m.meldValue, 0);
-        if (sum !== expected || solved.meldValue !== expected) {
-          problems.push(`score mismatch: dp=${expected} reported=${solved.meldValue} sum=${sum}`);
-          continue;
-        }
-
-        const used = new Map<string, number>();
-        for (const meld of solved.melds) {
-          const err = checkMeld(meld);
-          if (err) {
-            problems.push(`illegal meld (${err}) tiles=[${meld.tiles.map((t) => t.id).join(",")}]`);
-            break;
+          if (expected === null) {
+            if (solved !== null) problems.push(`expected infeasible but got a solution`);
+            continue;
           }
-          for (const tile of meld.tiles) used.set(tile.id, (used.get(tile.id) ?? 0) + 1);
-        }
+          if (solved === null) {
+            problems.push(`expected ${expected} but reconstruction returned null`);
+            continue;
+          }
 
-        const inputIds = new Set(tiles.map((t) => t.id));
-        for (const [id, count] of used) {
-          if (count > 1) problems.push(`tile ${id} used ${count} times`);
-          if (!inputIds.has(id)) problems.push(`unknown tile ${id} in output`);
+          // The reconstructed melds realize exactly the DP's optimum: their
+          // composite (tileWeight * tiles + meldValue) equals the scorer's value.
+          const composite = solved.tileCount * tileWeight + solved.meldValue;
+          const meldValueSum = solved.melds.reduce((s, m) => s + m.meldValue, 0);
+          const tileSum = solved.melds.reduce((s, m) => s + m.tiles.length, 0);
+          if (solved.composite !== expected || composite !== expected || meldValueSum !== solved.meldValue || tileSum !== solved.tileCount) {
+            problems.push(`mismatch w=${tileWeight}: dp=${expected} composite=${composite} meldValueSum=${meldValueSum} tileSum=${tileSum}`);
+            continue;
+          }
+
+          const used = new Map<string, number>();
+          for (const meld of solved.melds) {
+            const err = checkMeld(meld);
+            if (err) {
+              problems.push(`illegal meld (${err}) tiles=[${meld.tiles.map((t) => t.id).join(",")}]`);
+              break;
+            }
+            for (const tile of meld.tiles) used.set(tile.id, (used.get(tile.id) ?? 0) + 1);
+          }
+
+          const inputIds = new Set(tiles.map((t) => t.id));
+          for (const [id, count] of used) {
+            if (count > 1) problems.push(`tile ${id} used ${count} times`);
+            if (!inputIds.has(id)) problems.push(`unknown tile ${id} in output`);
+          }
+          for (const id of required) {
+            if (!used.has(id)) problems.push(`board tile ${id} not preserved`);
+          }
+          if (problems.length >= 5) break;
         }
-        for (const id of required) {
-          if (!used.has(id)) problems.push(`board tile ${id} not preserved`);
-        }
-        if (problems.length >= 5) break;
       }
     }
 

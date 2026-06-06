@@ -14,7 +14,7 @@ type Candidate = {
 type SearchState = {
   chosen: Candidate[];
   used: Set<string>;
-  meldValue: number;
+  weight: number; // composite objective: meldValue + tileWeight * tilesUsed
 };
 
 function candidateKey(type: string, tiles: Tile[]) {
@@ -141,25 +141,29 @@ export function bfGenerateMeldCandidates(tiles: Tile[]): Candidate[] {
   });
 }
 
-// Over-estimate of the meldValue still reachable from startIndex: the sum of
+function candidateWeight(candidate: Candidate, tileWeight: number) {
+  return candidate.meldValue + candidate.tiles.length * tileWeight;
+}
+
+// Over-estimate of the objective still reachable from startIndex: the sum of
 // every candidate that does not conflict with `used`, ignoring conflicts among
 // those candidates. Ignoring conflicts only inflates the figure, so it is a true
 // upper bound and safe to prune against.
-function upperBoundRemaining(candidates: Candidate[], startIndex: number, used: Set<string>) {
+function upperBoundRemaining(candidates: Candidate[], startIndex: number, used: Set<string>, tileWeight: number) {
   let total = 0;
   for (let index = startIndex; index < candidates.length; index += 1) {
     const candidate = candidates[index];
     if (candidate.tiles.every((tile) => !used.has(tile.id))) {
-      total += candidate.meldValue;
+      total += candidateWeight(candidate, tileWeight);
     }
   }
   return total;
 }
 
-// Maximizes total meldValue (joker positions count at their represented value),
-// subject to covering every required tile id and reaching minMeldValue. Exact
-// oracle (sound upper-bound pruning only), run on small inputs only.
-function searchBest(candidates: Candidate[], requiredTileIds: Set<string>, minMeldValue: number): SearchState | null {
+// Maximizes the composite objective (tileWeight * tilesUsed + meldValue; joker
+// positions count at their represented value) subject to covering every required
+// tile id. Exact oracle (sound upper-bound pruning only), run on small inputs.
+function searchBest(candidates: Candidate[], requiredTileIds: Set<string>, tileWeight: number): SearchState | null {
   let best: SearchState | null = null;
 
   function isRequiredCovered(used: Set<string>) {
@@ -172,30 +176,30 @@ function searchBest(candidates: Candidate[], requiredTileIds: Set<string>, minMe
   }
 
   const stack: Array<{ index: number; state: SearchState }> = [
-    { index: 0, state: { chosen: [], used: new Set(), meldValue: 0 } }
+    { index: 0, state: { chosen: [], used: new Set(), weight: 0 } }
   ];
   const seen = new Map<string, number>();
 
   while (stack.length > 0) {
     const { index, state } = stack.pop()!;
 
-    if (best && state.meldValue + upperBoundRemaining(candidates, index, state.used) <= best.meldValue) {
+    if (best && state.weight + upperBoundRemaining(candidates, index, state.used, tileWeight) <= best.weight) {
       continue;
     }
 
     const seenKey = `${index}:${[...state.used].sort().join(",")}`;
     const seenScore = seen.get(seenKey);
-    if (seenScore !== undefined && seenScore >= state.meldValue) {
+    if (seenScore !== undefined && seenScore >= state.weight) {
       continue;
     }
-    seen.set(seenKey, state.meldValue);
+    seen.set(seenKey, state.weight);
 
     if (index >= candidates.length) {
-      if (!isRequiredCovered(state.used) || state.meldValue < minMeldValue) {
+      if (!isRequiredCovered(state.used)) {
         continue;
       }
-      if (!best || state.meldValue > best.meldValue) {
-        best = { chosen: state.chosen, used: new Set(state.used), meldValue: state.meldValue };
+      if (!best || state.weight > best.weight) {
+        best = { chosen: state.chosen, used: new Set(state.used), weight: state.weight };
       }
       continue;
     }
@@ -211,7 +215,7 @@ function searchBest(candidates: Candidate[], requiredTileIds: Set<string>, minMe
         state: {
           chosen: [...state.chosen, candidate],
           used: nextUsed,
-          meldValue: state.meldValue + candidate.meldValue
+          weight: state.weight + candidateWeight(candidate, tileWeight)
         }
       });
     }
@@ -220,13 +224,13 @@ function searchBest(candidates: Candidate[], requiredTileIds: Set<string>, minMe
   return best;
 }
 
-// Differential-testing entrypoint: maximum total meldValue achievable from `tiles`
-// while using every tile in `requiredIds` and reaching at least `minMeldValue`.
-// Returns null when no such arrangement exists.
-export function bfMaxValue(tiles: Tile[], requiredIds: Set<string>, minMeldValue: number): number | null {
+// Differential-testing entrypoint: maximum composite objective achievable from
+// `tiles` while using every tile in `requiredIds`. Null when no covering
+// arrangement exists.
+export function bfMaxValue(tiles: Tile[], requiredIds: Set<string>, tileWeight: number): number | null {
   const candidates = bfGenerateMeldCandidates(tiles);
-  const best = searchBest(candidates, requiredIds, minMeldValue);
-  return best ? best.meldValue : null;
+  const best = searchBest(candidates, requiredIds, tileWeight);
+  return best ? best.weight : null;
 }
 
 // True when every tile can be placed in valid melds simultaneously.

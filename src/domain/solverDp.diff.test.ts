@@ -50,7 +50,7 @@ function randomSample(rand: () => number, maxTiles: number, density: number): Sa
 }
 
 describe("DP scorer matches brute-force oracle", () => {
-  it("agrees on max meldValue across random small inputs", () => {
+  it("agrees on the max objective across random small inputs", () => {
     const rand = mulberry32(0xC0FFEE);
     const mismatches: string[] = [];
 
@@ -60,15 +60,16 @@ describe("DP scorer matches brute-force oracle", () => {
       { cases: 2500, maxTiles: 12, density: 0.45 }
     ];
 
+    // tileWeight 0 = pure meldValue; 10000 = lexicographic (tiles played first).
     for (const profile of profiles) {
       for (let i = 0; i < profile.cases && mismatches.length < 5; i += 1) {
         const { tiles, required } = randomSample(rand, profile.maxTiles, profile.density);
-        for (const minMeldValue of [0, 15, 30, 45]) {
-          const bf = bfMaxValue(tiles, required, minMeldValue);
-          const dp = dpMaxValue(tiles, required, minMeldValue);
+        for (const tileWeight of [0, 10000]) {
+          const bf = bfMaxValue(tiles, required, tileWeight);
+          const dp = dpMaxValue(tiles, required, tileWeight);
           if (bf !== dp) {
             mismatches.push(
-              `min=${minMeldValue} bf=${bf} dp=${dp} required=[${[...required].sort().join(",")}] tiles=[${tiles
+              `w=${tileWeight} bf=${bf} dp=${dp} required=[${[...required].sort().join(",")}] tiles=[${tiles
                 .map((t) => t.id)
                 .sort()
                 .join(",")}]`
