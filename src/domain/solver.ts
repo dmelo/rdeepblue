@@ -24,10 +24,28 @@ function toMeld(dpMeld: DpMeld, index: number): Meld {
   };
 }
 
+// Value of the current board, used as the baseline for the reported net score.
+// Prefer each meld's stored jokerAssignments (the DP's maximizing choices on a
+// solver-applied board); validateMeld would otherwise re-resolve jokers low and
+// undercount it. Fall back to validateMeld when a joker has no stored assignment
+// (e.g. a hand-built board).
 function boardMeldValue(board: Meld[]): number {
   return board.reduce((sum, meld) => {
-    const validation = validateMeld(meld.tiles);
-    return sum + (validation.valid ? validation.meldValue : 0);
+    const assigned = new Map((meld.jokerAssignments ?? []).map((a) => [a.jokerId, a.value]));
+    let total = 0;
+    for (const tile of meld.tiles) {
+      if (tile.kind === "regular") {
+        total += tile.value;
+        continue;
+      }
+      const value = assigned.get(tile.id);
+      if (value === undefined) {
+        const validation = validateMeld(meld.tiles);
+        return sum + (validation.valid ? validation.meldValue : 0);
+      }
+      total += value;
+    }
+    return sum + total;
   }, 0);
 }
 
