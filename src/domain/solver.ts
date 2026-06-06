@@ -77,8 +77,9 @@ export function solveTurn(state: GameState): SolverResult {
   if (!result) {
     return {
       kind: "draw",
-      reason: "No legal play improves the board while preserving every table tile."
+      reason: "No legal arrangement preserves every table tile."
     };
+  }
   }
 
   const playedTiles = result.melds
