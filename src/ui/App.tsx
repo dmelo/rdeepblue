@@ -43,6 +43,26 @@ function TrashIcon() {
   );
 }
 
+function PlaceIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      height="16"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      width="16"
+    >
+      <path d="M12 3v11" />
+      <path d="M7 9l5 5 5-5" />
+      <path d="M5 20h14" />
+    </svg>
+  );
+}
+
 function Logo() {
   return (
     <div className="logo-mark" aria-hidden="true">
@@ -517,6 +537,16 @@ export function App() {
               <div className="meld" key={meld.id}>
                 <div className="meld-header">
                   <strong>Group {index + 1}</strong>
+                  <button
+                    aria-label={`Put selected tile in group ${index + 1}`}
+                    className="icon-button place"
+                    disabled={!selectedTile}
+                    title="Put selected tile here"
+                    type="button"
+                    onClick={() => selectedTile && moveTileToMeld(selectedTile.id, meld.id)}
+                  >
+                    <PlaceIcon />
+                  </button>
                   <button
                     aria-label={`Remove group ${index + 1}`}
                     className="icon-button"
