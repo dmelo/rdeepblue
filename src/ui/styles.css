@@ -236,6 +236,11 @@ label input[type="number"] {
   background: #fff8df;
   border-color: #ffe08a;
   grid-row: span 3;
+  align-self: start;
+  position: sticky;
+  top: 12px;
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
 }
 
 .hand-panel {
@@ -437,10 +442,22 @@ label input[type="number"] {
   margin-top: 12px;
 }
 
-.meld-list,
 .target-board {
   display: grid;
   gap: 10px;
+}
+
+/* Board groups flow across the available width and wrap, instead of stacking in
+   one tall column, so far less vertical scrolling is needed. */
+.meld-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.meld-list .meld {
+  flex: 1 1 196px;
+  min-width: 176px;
 }
 
 .meld,
@@ -452,8 +469,40 @@ label input[type="number"] {
 }
 
 .meld-header {
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 8px;
   margin-bottom: 8px;
+}
+
+.icon-button {
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #8a9a93;
+  display: inline-grid;
+  justify-items: center;
+  min-height: 28px;
+  padding: 0;
+  width: 28px;
+}
+
+.icon-button:hover:not(:disabled) {
+  background: #fff0ed;
+  border-color: #ffb5a8;
+  box-shadow: none;
+  color: #c0392b;
+  transform: none;
+}
+
+.icon-button.place:hover:not(:disabled) {
+  background: #eaf3ff;
+  border-color: #a9d8ff;
+  color: #1267d6;
+}
+
+.icon-button svg {
+  display: block;
 }
 
 .meld-header strong,
@@ -593,5 +642,7 @@ label input[type="number"] {
 
   .tile-picker {
     grid-row: auto;
+    position: static;
+    max-height: none;
   }
 }

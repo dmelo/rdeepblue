@@ -17,12 +17,15 @@ The app lets a human operator mirror the physical board, keep track of DeepBlue'
 
 ## Solver
 
-The solver is inspired by:
+The solver is a polynomial-time dynamic program (a port of the MAXSCORE algorithm) from:
 
 Jan N. van Rijn, Frank W. Takes, Jonathan K. Vis, **The Complexity of Rummikub Problems**.
 https://arxiv.org/abs/1604.07553
 
-The referenced paper is also included at `docs/1604.07553v1.pdf`.
+The referenced paper is also included at `docs/1604.07553v1.pdf`. It processes tile
+values 1→13 with per-suit run state, so it stays fast even on full late-game
+boards. Jokers are scored at the value they represent. The earlier
+brute-force solver is retained only as a test oracle.
 
 ## Tech Stack
 

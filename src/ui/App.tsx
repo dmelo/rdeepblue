@@ -22,6 +22,47 @@ function touch(state: GameState): GameState {
 
 const TILE_DRAG_TYPE = "application/x-rummikub-tile";
 
+function TrashIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      height="16"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      width="16"
+    >
+      <path d="M3 6h18" />
+      <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
+    </svg>
+  );
+}
+
+function PlaceIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      height="16"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      width="16"
+    >
+      <path d="M12 3v11" />
+      <path d="M7 9l5 5 5-5" />
+      <path d="M5 20h14" />
+    </svg>
+  );
+}
+
 function Logo() {
   return (
     <div className="logo-mark" aria-hidden="true">
@@ -166,6 +207,45 @@ export function App() {
     saveState(state);
   }, [state]);
 
+  // While dragging a tile, auto-scroll the page when the pointer hovers near the
+  // top or bottom edge of the window — so a tile picked up high can be dropped on
+  // a group further down without releasing it (touchpad-friendly).
+  useEffect(() => {
+    if (!draggingTileId) {
+      return;
+    }
+    const EDGE = 110;
+    const MAX_SPEED = 22;
+    let pointerY = Number.NaN;
+    let frame = 0;
+    // globalThis.DragEvent is the DOM event (it has clientY); the bare DragEvent
+    // name is shadowed by React's synthetic-event import in this file.
+    const onDragOver = (event: globalThis.DragEvent) => {
+      pointerY = event.clientY;
+    };
+    const step = () => {
+      if (!Number.isNaN(pointerY)) {
+        const height = window.innerHeight;
+        let delta = 0;
+        if (pointerY < EDGE) {
+          delta = -MAX_SPEED * (1 - pointerY / EDGE);
+        } else if (pointerY > height - EDGE) {
+          delta = MAX_SPEED * (1 - (height - pointerY) / EDGE);
+        }
+        if (delta !== 0) {
+          window.scrollBy(0, delta);
+        }
+      }
+      frame = requestAnimationFrame(step);
+    };
+    window.addEventListener("dragover", onDragOver);
+    frame = requestAnimationFrame(step);
+    return () => {
+      window.removeEventListener("dragover", onDragOver);
+      cancelAnimationFrame(frame);
+    };
+  }, [draggingTileId]);
+
   const usedIds = useMemo(() => new Set([...state.hand, ...state.board.flatMap((meld) => meld.tiles)].map((tile) => tile.id)), [state]);
   const boardErrors = validateBoard(state.board.filter((meld) => meld.tiles.length > 0));
   const selectedTile = [...state.hand, ...state.board.flatMap((meld) => meld.tiles)].find((tile) => tile.id === selectedTileId);
@@ -201,13 +281,6 @@ export function App() {
       return;
     }
     moveTileToHand(selectedTile.id);
-  }
-
-  function moveSelectedToMeld(meldId: string) {
-    if (!selectedTile) {
-      return;
-    }
-    moveTileToMeld(selectedTile.id, meldId);
   }
 
   function moveTileToHand(tileId: string) {
@@ -464,14 +537,25 @@ export function App() {
               <div className="meld" key={meld.id}>
                 <div className="meld-header">
                   <strong>Group {index + 1}</strong>
-                  <div>
-                    <button disabled={!selectedTile} type="button" onClick={() => moveSelectedToMeld(meld.id)}>
-                      Put selected here
-                    </button>
-                    <button type="button" onClick={() => removeMeld(meld.id)}>
-                      Remove
-                    </button>
-                  </div>
+                  <button
+                    aria-label={`Put selected tile in group ${index + 1}`}
+                    className="icon-button place"
+                    disabled={!selectedTile}
+                    title="Put selected tile here"
+                    type="button"
+                    onClick={() => selectedTile && moveTileToMeld(selectedTile.id, meld.id)}
+                  >
+                    <PlaceIcon />
+                  </button>
+                  <button
+                    aria-label={`Remove group ${index + 1}`}
+                    className="icon-button"
+                    title="Remove group"
+                    type="button"
+                    onClick={() => removeMeld(meld.id)}
+                  >
+                    <TrashIcon />
+                  </button>
                 </div>
                 <div
                   className={`tile-row drop-zone ${dragTarget === meld.id ? "drop-active" : ""}`}
