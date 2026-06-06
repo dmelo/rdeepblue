@@ -145,16 +145,24 @@ function pairCode(a: number, b: number): number {
   return a <= b ? a * NSTATE + b : b * NSTATE + a;
 }
 
-const planCache = new Map<number, SuitPlan[]>();
+// Nested cache keyed first by tileWeight, then by a bounded numeric key over
+// (slotA, slotB, r, bc, v). Avoids packing the unbounded `tileWeight` into one
+// integer, which could collide for large weights.
+const planCache = new Map<number, Map<number, SuitPlan[]>>();
 
 // Cached per-suit plan enumeration. Plans depend only on (slotA, slotB, r, bc, v,
 // tileWeight).
 export function suitPlans(slotA: number, slotB: number, r: number, bc: number, v: number, tileWeight: number): SuitPlan[] {
-  const key = ((((slotA * NSTATE + slotB) * 3 + r) * 3 + bc) * 16 + v) * 100000 + tileWeight;
-  let cached = planCache.get(key);
+  const baseKey = (((slotA * NSTATE + slotB) * 3 + r) * 3 + bc) * 16 + v;
+  let byWeight = planCache.get(tileWeight);
+  if (!byWeight) {
+    byWeight = new Map<number, SuitPlan[]>();
+    planCache.set(tileWeight, byWeight);
+  }
+  let cached = byWeight.get(baseKey);
   if (!cached) {
     cached = enumerateSuitPlans(slotA, slotB, r, bc, v, tileWeight);
-    planCache.set(key, cached);
+    byWeight.set(baseKey, cached);
   }
   return cached;
 }
