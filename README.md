@@ -113,3 +113,25 @@ Publish directory: dist
 ```
 
 Add the same environment variables in Netlify before building if you want GA or Sentry in production.
+
+### Continuous deployment (release-gated)
+
+`.github/workflows/deploy.yml` deploys to Netlify production **only when a GitHub
+Release is published** (or via the manual "Run workflow" button). It checks out the
+exact tagged commit, builds, and uploads `dist/` with the Netlify CLI. A plain push
+to `main` does not go live.
+
+One-time setup:
+
+1. **Turn off Netlify's git auto-publish** so pushes don't deploy: in Netlify →
+   Site configuration → Build & deploy → Continuous deployment, stop builds / disable
+   auto-publishing (or disconnect the Git repo). The CLI deploy still works because it
+   uploads a prebuilt `dist/` rather than triggering a Netlify build.
+2. **Add GitHub Actions secrets** (repo → Settings → Secrets and variables → Actions):
+   - `NETLIFY_AUTH_TOKEN` — Netlify personal access token (Netlify → User settings → Applications → New access token).
+   - `NETLIFY_SITE_ID` — the site's API ID (Netlify → Site configuration → General → Site information).
+   - `VITE_GA_MEASUREMENT_ID` — e.g. `G-LN783FGJC9` (needed for `trackEvent`; the static tag in `index.html` works regardless).
+   - `VITE_SENTRY_DSN` — optional.
+
+To release: `git tag vX.Y.Z && git push --tags`, then publish a Release for that tag on
+GitHub (or use the GitHub UI to create the tag and release together).

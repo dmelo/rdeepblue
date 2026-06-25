@@ -1,0 +1,56 @@
+name: Deploy to Netlify
+
+# Production deploys are gated on GitHub Releases — a plain push to main
+# does NOT go live (Netlify auto-publish is turned off; see README).
+on:
+  release:
+    types: [published]
+  workflow_dispatch: # manual "Run workflow" button for re-deploys / rollbacks
+
+# Never let two production deploys race; let an in-flight one finish.
+concurrency:
+  group: netlify-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    environment:
+      name: production
+      url: https://rdeepblue.diogomelo.net/
+    steps:
+      - name: Check out the released commit
+        uses: actions/checkout@v4
+        with:
+          # The exact tag for a release; the dispatch branch otherwise.
+          ref: ${{ github.event.release.tag_name || github.ref }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Enable Corepack (pins pnpm via packageManager field)
+        run: corepack enable
+
+      - name: Install dependencies
+        run: corepack pnpm install --frozen-lockfile
+
+      - name: Build
+        run: corepack pnpm build
+        env:
+          VITE_GA_MEASUREMENT_ID: ${{ secrets.VITE_GA_MEASUREMENT_ID }}
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+
+      - name: Deploy dist/ to Netlify (production)
+        run: >
+          npx --yes netlify-cli@26.1.0 deploy
+          --prod
+          --no-build
+          --dir=dist
+          --message "Release ${{ github.event.release.tag_name || github.sha }}"
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
